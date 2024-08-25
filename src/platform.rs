@@ -1,4 +1,5 @@
-use sdl2::sys::*;
+use sdl2::libc::c_int;
+use sdl2::{sys::*};
 use std::ffi::{CString,c_void};
 
 use std::ptr::null;
@@ -10,21 +11,23 @@ pub struct Platform {
 
 impl Platform {
     pub fn new(title: String, width: i32, height: i32,texture_width:i32,texture_height:i32) -> Self {
+		unsafe{SDL_Init(SDL_INIT_VIDEO);}
+		
         let window = unsafe {
-            SDL_CreateWindow(
-                CString::new(title).unwrap().as_ptr(),
-                0,
-                0,
-                width.into(),
-                height.into(),
-                SDL_WindowFlags::SDL_WINDOW_SHOWN as u32,
-            )
+			SDL_CreateWindow(
+				CString::new(title).unwrap().as_ptr(),
+				SDL_WINDOWPOS_CENTERED_MASK as i32,
+				SDL_WINDOWPOS_CENTERED_MASK as i32,
+				width.into(),
+				height.into(),
+				SDL_WindowFlags::SDL_WINDOW_SHOWN as u32,
+			)
         };
         let renderer = unsafe{
             SDL_CreateRenderer(window, -1, SDL_RendererFlags::SDL_RENDERER_ACCELERATED as u32)
         };
         let texture = unsafe{
-            SDL_CreateTexture(renderer, SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA8888 as u32, SDL_TextureAccess::SDL_TEXTUREACCESS_STREAMING as i32, texture_width, texture_height)
+            SDL_CreateTexture(renderer, SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA8888 as u32, SDL_TextureAccess::SDL_TEXTUREACCESS_STREAMING as c_int, texture_width as c_int, texture_height as c_int)
         };
         Platform{window,renderer,texture}
     }
@@ -45,197 +48,166 @@ impl Platform {
     pub unsafe  fn process(&mut self,keys:*mut i8)->bool{
         let mut quit = false;
 
-		let event: *mut SDL_Event= std::ptr::null_mut();
+		let mut event = std::mem::MaybeUninit::<SDL_Event>::uninit();
 
-		while SDL_PollEvent(event) != 0
+		while unsafe { SDL_PollEvent(event.as_mut_ptr()) } != 0
 		{
-			match event
-			{
-				 SDL_QUIT =>
-				{
+			let event: SDL_Event = unsafe { event.assume_init() };
+			
+			match event.type_ {
+				x if x==(sdl2::sys::SDL_EventType::SDL_QUIT as u32)  => {
 					quit = true;
-				} ,
-
-				 SDL_KEYDOWN =>
-				{
-					match (*(event)).key.keysym.sym
-					{
-						 SDLK_ESCAPE =>
-						{
+				},
+	
+				x if x== (sdl2::sys::SDL_EventType::SDL_KEYDOWN as u32) => {
+					match unsafe { event.key.keysym.sym } {
+						x if x==(sdl2::sys::SDL_KeyCode::SDLK_ESCAPE as i32) => {
 							quit = true;
 						},
-
-						SDLK_x =>
-						{
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_x as i32) => {
 							*(keys.wrapping_add(0)) = 1;
 						},
-
-						SDLK_1 =>
-						{
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_1 as i32) => {
 							*(keys.wrapping_add(1)) = 1;
 						},
-
-						 SDLK_2 =>
-						{
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_2 as i32) => {
 							*(keys.wrapping_add(2)) = 1;
-						} ,
-
-						 SDLK_3 =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_3 as i32) => {
 							*(keys.wrapping_add(3)) = 1;
-						} ,
-
-						 SDLK_q =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_q as i32) => {
 							*(keys.wrapping_add(4)) = 1;
-						} ,
-
-						 SDLK_w =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_w as i32) => {
 							*(keys.wrapping_add(5)) = 1;
-						} ,
-
-						 SDLK_e =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_e as i32) => {
 							*(keys.wrapping_add(6)) = 1;
-						} ,
-
-						 SDLK_a =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_a as i32) => {
 							*(keys.wrapping_add(7)) = 1;
-						} ,
-
-						 SDLK_s =>
-						{
+						},
+	
+						x if x==(sdl2::sys::SDL_KeyCode::SDLK_s as i32) => {
 							*(keys.wrapping_add(8)) = 1;
-						} ,
-
-						 SDLK_d =>
-						{
-							*(keys.wrapping_add(9)) = 1;
-						} ,
-
-						 SDLK_z =>
-						{
+						},
+	
+						x if x==(sdl2::sys::SDL_KeyCode::SDLK_d as i32) => {
+							*(keys.wrapping_add(9))  = 1;
+						},
+	
+						x if x==(sdl2::sys::SDL_KeyCode::SDLK_z as i32) => {
 							*(keys.wrapping_add(0xA)) = 1;
-						} ,
-
-						 SDLK_c =>
-						{
+						},
+	
+						x if x==(sdl2::sys::SDL_KeyCode::SDLK_c as i32) => {
 							*(keys.wrapping_add(0xB)) = 1;
-						} ,
-
-						 SDLK_4 =>
-						{
-							*(keys.wrapping_add(0xC)) = 1;
-						} ,
-
-						 SDLK_r =>
-						{
-							*(keys.wrapping_add(0xD)) = 1;
-						} ,
-
-						 SDLK_f =>
-						{
+						},
+	
+						x if x==(sdl2::sys::SDL_KeyCode::SDLK_4 as i32) => {
+							*(keys.wrapping_add(0xC))= 1;
+						},
+	
+						x if x==(sdl2::sys::SDL_KeyCode::SDLK_r as i32) => {
+							*(keys.wrapping_add(0xD))  = 1;
+						},
+	
+						x if x==(sdl2::sys::SDL_KeyCode::SDLK_f as i32)=> {
 							*(keys.wrapping_add(0xE)) = 1;
-						} ,
-
-						 SDLK_v =>
-						{
-							*(keys.wrapping_add(0xF)) = 1;
-						} ,
+						},
+	
+						x if x==(sdl2::sys::SDL_KeyCode::SDLK_v as i32)=> {
+							*(keys.wrapping_add(0xF))  = 1;
+						},
+	
+						_ => {} // Handle other keys if needed
 					}
-				} ,
-
-				 SDL_KEYUP =>
-				{
-					match (*(event)).key.keysym.sym
-					{
-						 SDLK_x =>
-						{
+				},
+	
+				x if x == (sdl2::sys::SDL_EventType::SDL_KEYUP as u32)   => {
+					match unsafe { event.key.keysym.sym } {
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_x as i32) => {
 							*(keys.wrapping_add(0)) = 0;
-						} ,
-
-						 SDLK_1 =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_1 as i32) => {
 							*(keys.wrapping_add(1)) = 0;
-						} ,
-
-						 SDLK_2 =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_2 as i32) => {
 							*(keys.wrapping_add(2)) = 0;
-						} ,
-
-						 SDLK_3 =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_3 as i32) => {
 							*(keys.wrapping_add(3)) = 0;
-						} ,
-
-						 SDLK_q =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_q as i32) => {
 							*(keys.wrapping_add(4)) = 0;
-						} ,
-
-						 SDLK_w =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_w as i32) => {
 							*(keys.wrapping_add(5)) = 0;
-						} ,
-
-						 SDLK_e =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_e as i32) => {
 							*(keys.wrapping_add(6)) = 0;
-						} ,
-
-						 SDLK_a =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_a as i32) => {
 							*(keys.wrapping_add(7)) = 0;
-						} ,
-
-						 SDLK_s =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_s as i32) => {
 							*(keys.wrapping_add(8)) = 0;
-						} ,
-
-						 SDLK_d =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_d as i32) => {
 							*(keys.wrapping_add(9)) = 0;
-						} ,
-
-						 SDLK_z =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_z as i32) => {
 							*(keys.wrapping_add(0xA)) = 0;
-						} ,
-
-						 SDLK_c =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_c as i32) => {
 							*(keys.wrapping_add(0xB)) = 0;
-						} ,
-
-						 SDLK_4 =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_4 as i32) => {
 							*(keys.wrapping_add(0xC)) = 0;
-						} ,
-
-						 SDLK_r =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_r as i32) => {
 							*(keys.wrapping_add(0xD)) = 0;
-						} ,
-
-						 SDLK_f =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_f as i32) => {
 							*(keys.wrapping_add(0xE)) = 0;
-						} ,
-
-						 SDLK_v =>
-						{
+						},
+	
+						x if x == (sdl2::sys::SDL_KeyCode::SDLK_v as i32) => {
 							*(keys.wrapping_add(0xF)) = 0;
-						} ,
+						},
+	
+						_ => {} // Handle other keys if needed
 					}
-				} ,
+				},
+	
+				_ => {} // Handle other event types if needed
 			}
 		}
-
-		return quit;
+	
+		quit
     }
     
 

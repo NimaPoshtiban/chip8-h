@@ -1,4 +1,4 @@
-
+#![allow(arithmetic_overflow)]
 use std::ffi::c_void;
 
 use chip8::{VIDEO_HEIGHT, VIDEO_WIDTH};
@@ -25,7 +25,7 @@ fn main() {
     );
 
     let mut chip8 = chip8::Chip8::new();
-    chip8.load_ROM(romFilename.to_owned());
+    chip8.load_ROM(romFilename.to_owned()).unwrap();
 
     let video_pitch = std::mem::size_of::<u32>() * (VIDEO_WIDTH as usize) ;
 
@@ -42,7 +42,7 @@ fn main() {
 			last_cycle_time = current_time;
 			chip8.cycle();
             unsafe {
-			    platform.update(chip8.video.as_ptr() as *const c_void, video_pitch as i32);
+			    // platform.update(chip8.video.as_ptr() as *const c_void, video_pitch as i32);
             }
 		}
     }

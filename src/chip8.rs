@@ -85,7 +85,7 @@ impl Default for Chip8 {
             delay_timer: Default::default(),
             sound_timer: Default::default(),
             keypad: Default::default(),
-            video: [0; 2048],
+            video: [0;  64 * 32],
             opcode: Default::default(),
             rand_gen: OsRng {},
             table: Vec::new(),
@@ -182,7 +182,9 @@ impl Chip8 {
         self.pc += 2;
 
         // Decode and Execute
-        (self.table[((self.opcode&0xF000 ) as usize) >> 12])(self);
+        // (self.table[((self.opcode&0xF000 ) as usize) >> 12 as u8])(self);
+        let procedure = self.table.get(((self.opcode&0xF000) as usize)>>12 );
+        procedure.expect("No Function!")(self);
         if self.delay_timer > 0{
             self.delay_timer -= 1;
         }
@@ -193,20 +195,24 @@ impl Chip8 {
     }
 
     fn Table0(&mut self){
-		(self.table0[(self.opcode & 0x000F) as usize])(self);
+        let procedure = self.table0.get((self.opcode&0x000F) as usize).expect("No such Function at table0");
+        procedure(self)
 	}
 
 	
 	fn Table8(&mut self){
-		(self.table8[(self.opcode & 0x000F) as usize])(self);
+		let procedure = self.table8.get((self.opcode&0x000F) as usize);
+        procedure.expect("No Function!")(self);
 	}
 
 	fn TableE(&mut self){
-		(self.tableE[(self.opcode & 0x000F) as usize])(self);
+		let procedure = self.tableE.get((self.opcode&0x000F) as usize);
+        procedure.expect("No Function!")(self);
 	}
 
 	fn TableF(&mut self){
-		self.tableF[(self.opcode & 0x00FF) as usize](self);
+		let procedure = self.table.get((self.opcode&0x00FF) as usize);
+        procedure.expect("No Function!")(self);
 	}
 
     fn OP_NULL(&mut self){}
@@ -279,7 +285,7 @@ impl Chip8 {
     fn OP_7xkk(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let byte = (self.opcode & 0x00FF) as u8;
-        self.registers[Vx as usize] += byte;
+        self.registers[Vx as usize] = (self.registers[Vx as usize]).overflowing_add(byte).0;
     }
     /// LD Vx, Vy
     /// Set Vx = Vy.
@@ -422,13 +428,13 @@ impl Chip8 {
             let sprite_byte = self.memory[(self.index + (e as u16)) as usize];
             (0..8).into_iter().for_each(|c| {
                 let sprite_pixel = sprite_byte & (0x80 >> c);
-                let mut screen_pixel = self.video
+                let screen_pixel = &mut self.video
                     [((y_pos + e) as usize) * ((VIDEO_WIDTH as u8) + (x_pos + (c) as u8)) as usize];
                 if sprite_pixel != 0 {
-                    if screen_pixel == 0xFFFFFFFF {
+                    if *screen_pixel == 0xFFFFFFFF {
                         self.registers[0xF] = 1;
                     }
-                    screen_pixel ^= 0xFFFFFFFF;
+                    *screen_pixel ^=0xFFFFFFFF;
                 }
             })
         });
